@@ -24,8 +24,8 @@ import {
   fetchCompanyById,
   deleteCompany,
 } from "@/features/company/companySlice";
-import { getCompanyMembers } from "@/api/member";
 import { useTheme } from "@mui/material/styles";
+import { fetchCompanyMembersByCompanyId } from "@/features/member/memberSlice";
 
 export default function CompanyDetailPage() {
   const theme = useTheme();
@@ -35,12 +35,13 @@ export default function CompanyDetailPage() {
   const { current: company, loading: companyLoading } = useSelector(
     (state) => state.company
   );
+  const memberState = useSelector((state) => state.member);
+  const members = memberState.members?.members || [];
+
 
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const [members, setMembers] = useState([]);
   const [totalCount, setTotalCount] = useState(0);
   const [page, setPage] = useState(1);
-  const [loadingMembers, setLoadingMembers] = useState(false);
   const [searchText, setSearchText] = useState("");
 
   useEffect(() => {
@@ -49,14 +50,8 @@ export default function CompanyDetailPage() {
 
   useEffect(() => {
     if (!company?.companyId) return;
-    setLoadingMembers(true);
-    getCompanyMembers(company.companyId, page, searchText)
-      .then((res) => {
-        setMembers(res.data.data.members);
-        setTotalCount(res.data.data.totalCount);
-      })
-      .finally(() => setLoadingMembers(false));
-  }, [company?.companyId, page, searchText]);
+    dispatch(fetchCompanyMembersByCompanyId(company.companyId));
+  }, [company?.companyId, dispatch]);
 
   const handleDelete = async () => {
     await dispatch(deleteCompany(id)).unwrap();
@@ -214,48 +209,32 @@ export default function CompanyDetailPage() {
                 </Tooltip>
               </Stack>
               <Divider sx={{ mt: 1, mb: 2 }} />
-              <TextField
-                fullWidth
-                placeholder="직원 이름을 검색하세요"
-                size="small"
-                value={searchText}
-                onChange={(e) => setSearchText(e.target.value)}
-                InputProps={{
-                  endAdornment: loadingMembers && (
-                    <CircularProgress size={20} />
-                  ),
-                }}
-                sx={{
-                  mb: 2,
-                  "& .MuiOutlinedInput-root": {
-                    bgcolor: theme.palette.background.paper,
-                  },
-                }}
-              />
               <Stack spacing={1}>
-                {members.map((m) => (
-                  <Stack
-                    key={m.id}
-                    direction="row"
-                    spacing={2}
-                    alignItems="center"
-                  >
-                    <Avatar sx={{ width: 32, height: 32 }}>
-                      {m.name?.[0]}
-                    </Avatar>
-                    <Box>
-                      <Stack direction="row" alignItems="center" spacing={1}>
-                        <Typography variant="subtitle2">{m.name}</Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {m.department} · {m.position}
-                        </Typography>
+                {Array.isArray(members)
+                  ? members.map((m) => (
+                      <Stack
+                        key={m.id}
+                        direction="row"
+                        spacing={2}
+                        alignItems="center"
+                      >
+                        <Avatar sx={{ width: 32, height: 32 }}>
+                          {m.name?.[0]}
+                        </Avatar>
+                        <Box>
+                          <Stack direction="row" alignItems="center" spacing={1}>
+                            <Typography variant="subtitle2">{m.name}</Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              {m.department} · {m.position}
+                            </Typography>
+                          </Stack>
+                          <Typography variant="caption" color="text.secondary">
+                            {m.email}
+                          </Typography>
+                        </Box>
                       </Stack>
-                      <Typography variant="caption" color="text.secondary">
-                        {m.email}
-                      </Typography>
-                    </Box>
-                  </Stack>
-                ))}
+                    ))
+                  : null}
               </Stack>
             </Box>
           </Stack>

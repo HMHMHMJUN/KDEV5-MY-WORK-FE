@@ -89,6 +89,18 @@ export const fetchMemberProjects = createAsyncThunk(
   }
 );
 
+export const fetchCompanyMembersByCompanyId = createAsyncThunk(
+  "member/fetchCompanyMembersByCompanyId",
+  async (companyId, thunkAPI) => {
+    try {
+      const response = await memberAPI.getCompanyMembersByCompanyId(companyId);
+      return response.data.data;
+    } catch (error) {
+      return thunkAPI.rejectWithValue(error.response?.data || "Error");
+    }
+  }
+);
+
 const memberSlice = createSlice({
   name: "member",
   initialState: {
@@ -186,6 +198,18 @@ const memberSlice = createSlice({
         state.loading = false;
       })
       .addCase(fetchMemberProjects.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      .addCase(fetchCompanyMembersByCompanyId.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchCompanyMembersByCompanyId.fulfilled, (state, action) => {
+        state.loading = false;
+        state.members = action.payload;
+      })
+      .addCase(fetchCompanyMembersByCompanyId.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       });
