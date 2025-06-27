@@ -19,6 +19,7 @@ import {
 import CloseIcon from "@mui/icons-material/Close";
 import { useTheme as useMuiTheme } from "@mui/material/styles";
 import CompanyMemberList from "./CompanyMemberList";
+import { updateProjectManager } from "@/api/projectMember";
 /**
  * @param {string} companyId
  * @param {'고객사'|'개발사'} companyType
@@ -84,6 +85,28 @@ export default function CompanyMemberSelector({
   };
 
   const getInitial = (name) => (name && name.length ? name[0] : "?");
+
+  // 매니저 등록/해제 API 호출 함수
+  const onManagerChange = async (emp) => {
+    if (!projectId || !emp.id) return;
+    try {
+      await updateProjectManager(emp.id, projectId);
+      // 성공 시 멤버 목록 새로고침
+      if (companyId && projectId) {
+        dispatch(fetchCompanyMembersInProject({ projectId, companyId })).then(
+          (action) => {
+            if (Array.isArray(action.payload)) {
+              setAssigned(action.payload);
+            } else if (action.payload?.members) {
+              setAssigned(action.payload.members);
+            }
+          }
+        );
+      }
+    } catch (e) {
+      alert("매니저 등록/해제에 실패했습니다.");
+    }
+  };
 
   return (
     <Box>
@@ -159,8 +182,11 @@ export default function CompanyMemberSelector({
             id: emp.memberId,
             name: emp.memberName,
             email: emp.email,
+            memberRole: emp.memberRole,
+            isManager: emp.isManager,
           }))}
           onRemove={handleRemove}
+          onManagerChange={onManagerChange}
         />
       </Box>
     </Box>
